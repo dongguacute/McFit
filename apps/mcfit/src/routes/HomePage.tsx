@@ -239,7 +239,7 @@ export function HomePage() {
       </motion.section>
 
       <motion.div
-        className="flex items-center justify-between gap-3 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3 shadow-sm"
+        className="flex flex-col gap-4 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -305,13 +305,13 @@ export function HomePage() {
             ) : null}
           </p>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="w-full shrink-0 border-t border-mcd-hairline/80 pt-3 text-left sm:w-auto sm:border-0 sm:pt-0 sm:text-right">
           <p className="text-[0.65rem] font-extrabold tracking-wide text-mcd-ink-muted">今日还可摄入</p>
           <p className="text-2xl font-black leading-none tabular-nums text-mcd-red sm:text-3xl">
             {remainingIntakeKcal}
             <span className="ml-0.5 text-sm font-extrabold text-mcd-ink/45">kcal</span>
           </p>
-          <p className="mt-0.5 max-w-44 text-[0.65rem] font-medium leading-tight text-mcd-ink-muted sm:max-w-none">
+          <p className="mt-0.5 max-w-none text-[0.65rem] font-medium leading-tight text-mcd-ink-muted sm:ml-auto sm:text-right">
             在全日结束时仍保持 ≥{PLANNED_DAILY_DEFICIT_KCAL} kcal 缺口前提下 · 全日上限约{" "}
             <span className="font-extrabold tabular-nums text-mcd-ink/75">{budget.intakeBudgetKcal}</span> kcal
             {consumedMealKcal > 0 ? (
@@ -432,7 +432,7 @@ export function HomePage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby={weightDialogTitleId}
-            className="relative w-full max-w-sm rounded-t-2xl border border-mcd-hairline bg-mcd-white p-4 shadow-2xl sm:rounded-2xl sm:p-5"
+            className="relative w-full max-w-sm rounded-t-2xl border border-mcd-hairline bg-mcd-white p-4 pb-[max(1rem,env(safe-area-inset-bottom,0))] shadow-2xl sm:rounded-2xl sm:p-5 sm:pb-5"
           >
             <h2 id={weightDialogTitleId} className="text-base font-extrabold text-mcd-ink">
               现在体重

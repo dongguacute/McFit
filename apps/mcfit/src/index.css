@@ -52,8 +52,13 @@
   --shadow-mcd-sidebar: var(--mcd-shadow-sidebar);
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
-  @apply min-h-dvh bg-mcd-canvas font-sans text-mcd-ink antialiased;
+  @apply min-h-dvh overflow-x-clip bg-mcd-canvas font-sans text-mcd-ink antialiased;
 }
 
 /* 首页横幅：金白竖条底纹（随深浅色变量变） */

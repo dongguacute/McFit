@@ -157,11 +157,11 @@ export function RecordsPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col gap-3 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3 shadow-sm min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between">
         <p className="text-sm font-extrabold text-mcd-ink">
           <span className="text-mcd-ink-muted">今日</span> · {todayTitleZh()}
         </p>
-        <div className="text-right">
+        <div className="text-left min-[400px]:text-right">
           <p className="text-2xl font-black leading-none tabular-nums text-mcd-red sm:text-3xl">
             {Math.round(todayKcal * 10) / 10}
             <span className="ml-0.5 text-sm font-extrabold text-mcd-ink/45">kcal</span>

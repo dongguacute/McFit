@@ -1,13 +1,9 @@
 import {
   ChevronLeft,
   ClipboardList,
-  Dumbbell,
   Home,
-  LayoutGrid,
   LayoutDashboard,
   Settings,
-  Sparkles,
-  User,
   UtensilsCrossed,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -30,9 +26,11 @@ const sidebarLink = ({ isActive }: { isActive: boolean }) =>
 
 const mobileTabClass = ({ isActive }: { isActive: boolean }) =>
   [
-    "flex min-h-[3.25rem] w-full min-w-0 flex-col items-center justify-end gap-0.5 pb-1.5 text-[0.62rem] font-extrabold",
-    "transition-colors [&_svg]:size-5 [&_svg]:shrink-0",
-    isActive ? "text-mcd-red" : "text-mcd-ink/40",
+    "flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 text-[0.65rem] font-extrabold leading-none transition-colors",
+    "[-webkit-tap-highlight-color:transparent] active:scale-[0.98] [&_svg]:size-[1.35rem] [&_svg]:shrink-0",
+    isActive
+      ? "bg-mcd-gold/25 text-mcd-red"
+      : "text-mcd-ink/45",
   ].join(" ");
 
 function shanghaiTimeLabel(d: Date): string {
@@ -164,7 +162,7 @@ export function AppLayout() {
         )}
 
         <main
-          className="min-h-0 flex-1 overflow-y-auto max-lg:pb-[calc(3.5rem+env(safe-area-inset-bottom,0))]"
+          className="min-h-0 flex-1 overflow-y-auto max-lg:pb-[calc(4.25rem+env(safe-area-inset-bottom,0))]"
           id="main-scroll"
         >
           <div
@@ -179,38 +177,28 @@ export function AppLayout() {
         </main>
       </div>
 
-      {/* 移动端底栏：5 格 + 中央红钮（灵感来自官方底栏） */}
+      {/* 移动端底栏：四格均分，与侧栏路由一一对应 */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-mcd-hairline bg-mcd-white lg:hidden"
-        style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0))" }}
+        className="fixed inset-x-0 bottom-0 z-40 touch-manipulation border-t border-mcd-hairline bg-mcd-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md supports-backdrop-filter:bg-mcd-white/80 lg:hidden dark:shadow-[0_-4px_24px_rgba(0,0,0,0.35)]"
+        style={{ paddingBottom: "max(0.35rem, env(safe-area-inset-bottom, 0px))" }}
         aria-label="主导航"
       >
-        <div className="relative flex h-14 items-end justify-between gap-0 px-1 pt-1">
+        <div className="mx-auto flex max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1.5">
           <NavLink to="/" end className={mobileTabClass} title="概览">
-            <Home className="mx-auto" strokeWidth={2.2} />
-            首页
+            <Home strokeWidth={2.2} aria-hidden />
+            概览
           </NavLink>
-          <NavLink to="/records" className={mobileTabClass} title="记录">
-            <LayoutGrid className="mx-auto" strokeWidth={2.2} />
-            数据
+          <NavLink to="/records" className={mobileTabClass} title="运动记录">
+            <ClipboardList strokeWidth={2.2} aria-hidden />
+            运动
           </NavLink>
-          <div className="relative flex w-12 shrink-0 flex-col items-center">
-            <NavLink
-              to="/records"
-              className="absolute -top-3 left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-mcd-red text-mcd-white [box-shadow:0_4px_14px_rgba(218,25,28,0.45)]"
-              title="开练"
-            >
-              <Dumbbell className="size-5" strokeWidth={2.3} />
-            </NavLink>
-            <span className="w-full pt-8 text-center text-[0.62rem] font-extrabold text-mcd-ink/40">开练</span>
-          </div>
+          <NavLink to="/meal-record" className={mobileTabClass} title="饮食记录">
+            <UtensilsCrossed strokeWidth={2.2} aria-hidden />
+            饮食
+          </NavLink>
           <NavLink to="/settings" className={mobileTabClass} title="设置">
-            <Sparkles className="mx-auto" strokeWidth={2.2} />
-            服务
-          </NavLink>
-          <NavLink to="/settings" className={mobileTabClass} title="我的">
-            <User className="mx-auto" strokeWidth={2.2} />
-            我的
+            <Settings strokeWidth={2.2} aria-hidden />
+            设置
           </NavLink>
         </div>
       </nav>

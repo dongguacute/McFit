@@ -130,7 +130,7 @@ export function SettingsPage() {
       transition={{ duration: 0.3 }}
     >
       <div>
-        <h2 className="text-2xl font-black tracking-tight text-mcd-ink">外观</h2>
+        <h2 className="text-xl font-black tracking-tight text-mcd-ink sm:text-2xl">外观</h2>
         <p className="mt-1 text-sm font-medium leading-relaxed text-mcd-ink-muted">
           浅色、深色，或跟随系统；点击后立即生效并写入本机（「保存全部」也会带上当前外观选项）。
         </p>
@@ -166,7 +166,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <h2 className="text-2xl font-black tracking-tight text-mcd-ink">连接</h2>
+      <h2 className="text-xl font-black tracking-tight text-mcd-ink sm:text-2xl">连接</h2>
       <p className="text-sm font-medium leading-relaxed text-mcd-ink-muted">
         配置高德选店、麦当劳 MCP 与 OpenAI 兼容的地址和密钥；数据保存在本机浏览器，由你在调用后端时一并传入。
       </p>
@@ -378,7 +378,7 @@ export function SettingsPage() {
       </div>
 
       <div>
-        <h2 className="text-2xl font-black tracking-tight text-mcd-ink">身体数据</h2>
+        <h2 className="text-xl font-black tracking-tight text-mcd-ink sm:text-2xl">身体数据</h2>
         <p className="mt-1 text-sm font-medium leading-relaxed text-mcd-ink-muted">
           公制，单位千克（kg）。运动耗热按「现在体重」优先，无则回退到「初始体重」。
         </p>
