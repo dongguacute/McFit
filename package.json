@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "preview": "turbo run preview --filter=mcfit"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

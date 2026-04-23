@@ -36,7 +36,7 @@
 }
 
 @theme {
-  --font-sans: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui,
+  --font-sans: ui-sans-serif, system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
     sans-serif;
   --color-mcd-gold: var(--mcd-gold);
   --color-mcd-red: var(--mcd-red);

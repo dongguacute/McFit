@@ -12,6 +12,11 @@
     },
     "lint": {
       "dependsOn": ["^lint"]
+    },
+    "preview": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
     }
   }
 }
