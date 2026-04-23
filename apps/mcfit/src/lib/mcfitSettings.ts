@@ -1,4 +1,5 @@
 import type { RequestBody } from "@mcfit/api";
+import { DEFAULT_WEIGHT_KG_FOR_BURN } from "./exerciseEnergy";
 
 const STORAGE_KEY = "mcfit_settings_v1";
 
@@ -11,8 +12,10 @@ export type McFitSettings = {
   aiApiBaseUrl: string;
   /** 对应 `RequestBody.aitoken`，与上方 Base URL 配对的 API Key */
   aiApiKey: string;
-  /** 初始体重（千克），未设置时为 `null` */
+  /** 初始体重（千克，建议空腹 / 开练前基准），未设置时为 `null` */
   initialWeightKg: number | null;
+  /** 现在体重（千克），运动耗热优先用此项；可随你定期在设置里更新 */
+  currentWeightKg: number | null;
 };
 
 const defaults: McFitSettings = {
@@ -21,6 +24,7 @@ const defaults: McFitSettings = {
   aiApiBaseUrl: "",
   aiApiKey: "",
   initialWeightKg: null,
+  currentWeightKg: null,
 };
 
 export function loadMcFitSettings(): McFitSettings {
@@ -33,15 +37,19 @@ export function loadMcFitSettings(): McFitSettings {
       return { ...defaults };
     }
     const p = JSON.parse(raw) as Partial<McFitSettings>;
-    const w = p.initialWeightKg;
+    const wi = p.initialWeightKg;
     const initialWeightKg =
-      typeof w === "number" && Number.isFinite(w) && w >= 0 ? w : null;
+      typeof wi === "number" && Number.isFinite(wi) && wi >= 0 ? wi : null;
+    const wc = p.currentWeightKg;
+    const currentWeightKg =
+      typeof wc === "number" && Number.isFinite(wc) && wc >= 0 ? wc : null;
     return {
       mcpBaseUrl: typeof p.mcpBaseUrl === "string" ? p.mcpBaseUrl : "",
       mcpToken: typeof p.mcpToken === "string" ? p.mcpToken : "",
       aiApiBaseUrl: typeof p.aiApiBaseUrl === "string" ? p.aiApiBaseUrl : "",
       aiApiKey: typeof p.aiApiKey === "string" ? p.aiApiKey : "",
       initialWeightKg,
+      currentWeightKg,
     };
   } catch {
     return { ...defaults };
@@ -50,6 +58,20 @@ export function loadMcFitSettings(): McFitSettings {
 
 export function saveMcFitSettings(s: McFitSettings): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+/**
+ * MET 耗热用体重（kg）：
+ * **现在体重** 优先，否则 **初始体重**，最后默认 {@link DEFAULT_WEIGHT_KG_FOR_BURN}。
+ */
+export function weightKgForCalorieEstimate(s: McFitSettings): number {
+  if (s.currentWeightKg != null && s.currentWeightKg > 0) {
+    return s.currentWeightKg;
+  }
+  if (s.initialWeightKg != null && s.initialWeightKg > 0) {
+    return s.initialWeightKg;
+  }
+  return DEFAULT_WEIGHT_KG_FOR_BURN;
 }
 
 /**

@@ -16,7 +16,7 @@ import { getGreeting } from "../lib/greeting";
 const shellTitles: Record<string, { t: string; s: string }> = {
   "/": { t: "今日开练", s: "让每次训练都简单可完成" },
   "/settings": { t: "设置", s: "账户、通知与偏好" },
-  "/records": { t: "运动记录", s: "时间线与完成情况" },
+  "/records": { t: "运动记录", s: "本日与历史" },
 };
 
 const sidebarLink = ({ isActive }: { isActive: boolean }) =>

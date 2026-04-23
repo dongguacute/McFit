@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Key, KeyRound, Link2, Save, Scale, Server } from "lucide-react";
+import { Eye, EyeOff, Key, KeyRound, Link2, Save, Scale, Server, Weight } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { loadMcFitSettings, saveMcFitSettings } from "../lib/mcfitSettings";
@@ -9,6 +9,7 @@ export function SettingsPage() {
   const aiBaseId = useId();
   const aiKeyId = useId();
   const weightId = useId();
+  const currentWeightId = useId();
   const [mcpBaseUrl, setMcpBaseUrl] = useState("");
   const [mcpToken, setMcpToken] = useState("");
   const [aiApiBaseUrl, setAiApiBaseUrl] = useState("");
@@ -16,6 +17,7 @@ export function SettingsPage() {
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [showAiKey, setShowAiKey] = useState(false);
   const [initialWeightInput, setInitialWeightInput] = useState("");
+  const [currentWeightInput, setCurrentWeightInput] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,6 +28,9 @@ export function SettingsPage() {
     setAiApiKey(s.aiApiKey);
     setInitialWeightInput(
       s.initialWeightKg != null ? String(s.initialWeightKg) : "",
+    );
+    setCurrentWeightInput(
+      s.currentWeightKg != null ? String(s.currentWeightKg) : "",
     );
   }, []);
 
@@ -38,15 +43,24 @@ export function SettingsPage() {
         initialWeightKg = Math.round(n * 10) / 10;
       }
     }
+    const tcw = currentWeightInput.trim().replace(",", ".");
+    let currentWeightKg: number | null = null;
+    if (tcw) {
+      const n = Number.parseFloat(tcw);
+      if (Number.isFinite(n) && n >= 0) {
+        currentWeightKg = Math.round(n * 10) / 10;
+      }
+    }
     saveMcFitSettings({
       mcpBaseUrl: mcpBaseUrl.trim().replace(/\/+$/, "") || "",
       mcpToken: mcpToken.trim(),
       aiApiBaseUrl: aiApiBaseUrl.trim().replace(/\/+$/, "") || "",
       aiApiKey: aiApiKey.trim(),
       initialWeightKg,
+      currentWeightKg,
     });
     setSavedAt(Date.now());
-  }, [mcpBaseUrl, mcpToken, aiApiBaseUrl, aiApiKey, initialWeightInput]);
+  }, [mcpBaseUrl, mcpToken, aiApiBaseUrl, aiApiKey, initialWeightInput, currentWeightInput]);
 
   return (
     <motion.div
@@ -192,40 +206,74 @@ export function SettingsPage() {
       <div>
         <h2 className="text-2xl font-black tracking-tight text-mcd-ink">身体数据</h2>
         <p className="mt-1 text-sm font-medium leading-relaxed text-mcd-ink-muted">
-          作为训练与记录的基准；公制，单位千克（kg）。
+          公制，单位千克（kg）。运动耗热按「现在体重」优先，无则回退到「初始体重」。
         </p>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-3.5 sm:p-4">
-          <label
-            htmlFor={weightId}
-            className="flex items-center gap-2 text-[0.95rem] font-extrabold text-mcd-ink"
-          >
-            <Scale className="size-4 text-mcd-red" strokeWidth={2.2} aria-hidden />
-            初始体重
-          </label>
-          <p className="mt-1 text-xs font-medium text-mcd-ink-muted">
-            留空表示未设置。保存时会保留一位小数。
-          </p>
-          <p className="mt-1.5 text-xs font-extrabold text-mcd-ink/80">
-            注意：请填写空腹时的体重（如晨起、未进食前）。
-          </p>
-          <div className="relative mt-2 flex items-center gap-2">
-            <input
-              id={weightId}
-              name="initialWeightKg"
-              type="text"
-              inputMode="decimal"
-              value={initialWeightInput}
-              onChange={(e) => setInitialWeightInput(e.target.value)}
-              placeholder="例如 70.5"
-              className="min-w-0 flex-1 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-medium text-mcd-ink tabular-nums placeholder:text-mcd-ink-muted/50 focus:border-mcd-red/40 focus:outline-none focus:ring-2 focus:ring-mcd-red/15"
-              aria-describedby={`${weightId}-unit`}
-            />
-            <span
-              id={`${weightId}-unit`}
-              className="shrink-0 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-extrabold text-mcd-ink-muted"
+        <div className="mt-4 space-y-0 overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-3.5 sm:p-4">
+          <div>
+            <label
+              htmlFor={currentWeightId}
+              className="flex items-center gap-2 text-[0.95rem] font-extrabold text-mcd-ink"
             >
-              kg
-            </span>
+              <Weight className="size-4 text-mcd-red" strokeWidth={2.2} aria-hidden />
+              现在体重
+            </label>
+            <p className="mt-1 text-xs font-medium text-mcd-ink-muted">
+              建议定期更新。用于 <span className="font-extrabold">MET 消耗</span> 等计算，优先于初始体重；留空则只用初始值或默认 70
+              kg。
+            </p>
+            <div className="relative mt-2 flex items-center gap-2">
+              <input
+                id={currentWeightId}
+                name="currentWeightKg"
+                type="text"
+                inputMode="decimal"
+                value={currentWeightInput}
+                onChange={(e) => setCurrentWeightInput(e.target.value)}
+                placeholder="例如 68.0"
+                className="min-w-0 flex-1 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-medium text-mcd-ink tabular-nums placeholder:text-mcd-ink-muted/50 focus:border-mcd-red/40 focus:outline-none focus:ring-2 focus:ring-mcd-red/15"
+                aria-describedby={`${currentWeightId}-unit`}
+              />
+              <span
+                id={`${currentWeightId}-unit`}
+                className="shrink-0 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-extrabold text-mcd-ink-muted"
+              >
+                kg
+              </span>
+            </div>
+          </div>
+          <div className="mt-4 border-t border-mcd-hairline pt-4">
+            <label
+              htmlFor={weightId}
+              className="flex items-center gap-2 text-[0.95rem] font-extrabold text-mcd-ink"
+            >
+              <Scale className="size-4 text-mcd-red" strokeWidth={2.2} aria-hidden />
+              初始体重
+            </label>
+            <p className="mt-1 text-xs font-medium text-mcd-ink-muted">
+              开练/打卡基准，留空表示未设置。保存时保留一位小数。
+            </p>
+            <p className="mt-1.5 text-xs font-extrabold text-mcd-ink/80">
+              注意：请填写空腹时的体重（如晨起、未进食前）。
+            </p>
+            <div className="relative mt-2 flex items-center gap-2">
+              <input
+                id={weightId}
+                name="initialWeightKg"
+                type="text"
+                inputMode="decimal"
+                value={initialWeightInput}
+                onChange={(e) => setInitialWeightInput(e.target.value)}
+                placeholder="例如 70.5"
+                className="min-w-0 flex-1 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-medium text-mcd-ink tabular-nums placeholder:text-mcd-ink-muted/50 focus:border-mcd-red/40 focus:outline-none focus:ring-2 focus:ring-mcd-red/15"
+                aria-describedby={`${weightId}-unit`}
+              />
+              <span
+                id={`${weightId}-unit`}
+                className="shrink-0 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-extrabold text-mcd-ink-muted"
+              >
+                kg
+              </span>
+            </div>
           </div>
         </div>
       </div>
