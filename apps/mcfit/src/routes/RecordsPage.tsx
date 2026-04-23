@@ -1,5 +1,5 @@
-import { Flame, Plus, Trash2 } from "lucide-react";
-import { motion } from "motion/react";
+import { ChevronDown, Flame, Plus, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { EXERCISE_CATEGORIES, exercisesInCategory } from "../lib/exerciseEnergy";
 import {
@@ -61,6 +61,7 @@ export function RecordsPage() {
   const [minutesStr, setMinutesStr] = useState("30");
   const [logs, setLogs] = useState<WorkoutLogEntry[]>([]);
   const [weightHint, setWeightHint] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
 
   const selectedExercise = useMemo(
     () => inCat.find((e) => e.id === exerciseId),
@@ -142,8 +143,12 @@ export function RecordsPage() {
     [refresh],
   );
 
-  const fieldClass =
-    "mt-1.5 w-full rounded-2xl border border-mcd-hairline bg-mcd-canvas/80 px-3.5 py-2.5 text-sm text-mcd-ink shadow-inner shadow-black/5 transition-shadow focus:border-mcd-red/45 focus:outline-none focus:ring-4 focus:ring-mcd-red/10";
+  const labelClass =
+    "text-[0.7rem] font-extrabold tracking-wide text-mcd-ink-muted";
+  const controlClass =
+    "box-border h-12 w-full rounded-xl border border-mcd-hairline bg-mcd-white px-3 text-sm text-mcd-ink shadow-sm transition focus:border-mcd-red/50 focus:outline-none focus:ring-2 focus:ring-mcd-red/15";
+  const addBtnClass =
+    "inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-linear-to-b from-mcd-gold to-[#f5a800] px-3 text-sm font-extrabold text-mcd-ink shadow-sm shadow-amber-900/10 transition active:scale-[0.98] sm:min-w-[5.5rem]";
 
   return (
     <motion.div
@@ -169,102 +174,134 @@ export function RecordsPage() {
         </div>
       </div>
 
-      <div>
-        <div className="mb-2 flex flex-wrap items-center justify-end gap-2 sm:justify-between">
-          <p
-            id={weightNoteId}
-            className="w-full text-[0.7rem] font-medium text-mcd-ink-muted sm:order-first sm:mb-0 sm:w-auto"
-          >
-            估算体重：{weightHint}
-          </p>
-          {previewKcal != null ? (
-            <div className="inline-flex items-center gap-1 rounded-full border border-mcd-hairline bg-mcd-canvas/80 px-2.5 py-1">
-              <Flame className="size-3.5 text-orange-500" strokeWidth={2.2} aria-hidden />
-              <span className="text-xs font-extrabold tabular-nums text-mcd-ink">≈{previewKcal} kcal</span>
-            </div>
-          ) : null}
-        </div>
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setAddOpen((o) => !o)}
+          aria-expanded={addOpen}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3.5 text-left shadow-sm transition-colors hover:bg-mcd-list-row"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mcd-gold/35 text-mcd-red">
+              <Plus className="size-5" strokeWidth={2.2} aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold text-mcd-ink">
+                {addOpen ? "收起表单" : "记一笔运动"}
+              </span>
+              <span className="mt-0.5 block text-[0.7rem] font-medium text-mcd-ink-muted">
+                {addOpen ? "选类型、时长后点「添加」" : "展开后填写"}
+              </span>
+            </span>
+          </span>
+          <ChevronDown
+            className={`size-5 shrink-0 text-mcd-ink/35 transition-transform duration-200 ${addOpen ? "rotate-180" : ""}`}
+            strokeWidth={2.2}
+            aria-hidden
+          />
+        </button>
 
-        <div className="overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-1 shadow-sm shadow-black/4">
-          <div className="rounded-xl bg-mcd-canvas/40 p-4 sm:p-5">
-            <div className="grid gap-3 sm:grid-cols-12 sm:gap-3">
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor={catId}
-                  className="text-[0.7rem] font-extrabold tracking-wide text-mcd-ink-muted"
-                >
-                  运动类型
-                </label>
-                <select
-                  id={catId}
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className={fieldClass}
-                  aria-describedby={weightNoteId}
-                >
-                  {EXERCISE_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+        <AnimatePresence initial={false}>
+          {addOpen ? (
+            <motion.div
+              key="add-panel"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-3"
+            >
+              <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-between">
+                <p id={weightNoteId} className="w-full text-[0.7rem] font-medium text-mcd-ink-muted sm:order-first sm:w-auto">
+                  估算体重：{weightHint}
+                </p>
+                {previewKcal != null ? (
+                  <div className="inline-flex items-center gap-1 rounded-full border border-mcd-hairline bg-mcd-canvas/80 px-2.5 py-1">
+                    <Flame className="size-3.5 text-orange-500" strokeWidth={2.2} aria-hidden />
+                    <span className="text-xs font-extrabold tabular-nums text-mcd-ink">
+                      ≈{previewKcal} kcal
+                    </span>
+                  </div>
+                ) : null}
               </div>
-              <div className="sm:col-span-6">
-                <label
-                  htmlFor={exId}
-                  className="text-[0.7rem] font-extrabold tracking-wide text-mcd-ink-muted"
-                >
-                  具体项目
-                </label>
-                <select
-                  id={exId}
-                  value={exerciseId}
-                  onChange={(e) => setExerciseId(e.target.value)}
-                  className={`${fieldClass} font-medium`}
-                >
-                  {inCat.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}（MET {e.met}）
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor={minId}
-                  className="text-[0.7rem] font-extrabold tracking-wide text-mcd-ink-muted"
-                >
-                  时长
-                </label>
-                <div className="relative mt-1.5">
-                  <input
-                    id={minId}
-                    type="number"
-                    min={1}
-                    max={999}
-                    inputMode="numeric"
-                    value={minutesStr}
-                    onChange={(e) => setMinutesStr(e.target.value)}
-                    className={`${fieldClass} pr-10 font-extrabold tabular-nums`}
-                  />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-mcd-ink/40">
-                    分
-                  </span>
+
+              <div className="overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white shadow-sm">
+                <div className="p-4 sm:p-5">
+                  {/*
+                    底部对齐：四列用 flex + items-end，让「仅按钮」的一列与前三列的输入下沿对齐
+                  */}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-3">
+                    <div className="min-w-0 flex-1 sm:max-w-[32%] lg:max-w-[28%]">
+                      <label htmlFor={catId} className={labelClass}>
+                        运动类型
+                      </label>
+                      <select
+                        id={catId}
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className={`${controlClass} mt-1.5 max-w-full`}
+                        aria-describedby={weightNoteId}
+                      >
+                        {EXERCISE_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="min-w-0 flex-1 sm:min-w-0 sm:flex-[1.4]">
+                      <label htmlFor={exId} className={labelClass}>
+                        具体项目
+                      </label>
+                      <select
+                        id={exId}
+                        value={exerciseId}
+                        onChange={(e) => setExerciseId(e.target.value)}
+                        className={`${controlClass} mt-1.5 w-full font-medium`}
+                      >
+                        {inCat.map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.name}（MET {e.met}）
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-full shrink-0 sm:w-28">
+                      <label htmlFor={minId} className={labelClass}>
+                        时长
+                      </label>
+                      <div className="relative mt-1.5">
+                        <input
+                          id={minId}
+                          type="number"
+                          min={1}
+                          max={999}
+                          inputMode="numeric"
+                          value={minutesStr}
+                          onChange={(e) => setMinutesStr(e.target.value)}
+                          className={`${controlClass} pr-9 font-extrabold tabular-nums`}
+                        />
+                        <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs font-extrabold text-mcd-ink/45">
+                          分
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full shrink-0 pt-0 sm:w-auto sm:min-w-23">
+                      <button
+                        type="button"
+                        onClick={onAdd}
+                        className={addBtnClass}
+                      >
+                        <Plus className="size-4" strokeWidth={2.2} />
+                        添加
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex sm:col-span-1 sm:items-end">
-                <button
-                  type="button"
-                  onClick={onAdd}
-                  className="mt-1 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-linear-to-b from-mcd-gold to-[#f5a800] px-2 text-sm font-extrabold text-mcd-ink shadow-md shadow-amber-900/15 transition-transform active:scale-[0.98] sm:mt-0 sm:min-h-[2.9rem] sm:px-3"
-                >
-                  <Plus className="size-4" strokeWidth={2.2} />
-                  添加
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       {todayLogs.length > 0 ? (
