@@ -21,5 +21,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "vite-plugin-checkin-api.ts", "vite-amap-nearest-mcd.ts"]
 }

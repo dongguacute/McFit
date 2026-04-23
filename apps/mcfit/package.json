@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "pnpm --filter @mcfit/api run build && vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "echo \"no lint configured\""

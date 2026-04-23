@@ -1,37 +1,175 @@
-import {
-  Award,
-  Gift,
-  Medal,
-  ScanLine,
-  ShoppingBag,
-  Star,
-  Ticket,
-  Utensils,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { CalendarCheck2, Flame, MapPin, UtensilsCrossed } from "lucide-react";
 import { motion } from "motion/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  checkInForToday,
+  loadCheckInStreakInfo,
+  type CheckInStreakInfo,
+} from "../lib/checkInStreak";
+import { runMcpMenuFetch } from "../lib/checkinMenuRunner";
+import {
+  buildMealPlanForNow,
+  computeIntakeBudget,
+  formatGeoLabel,
+  PLANNED_DAILY_DEFICIT_KCAL,
+  remainingIntakeAllowanceKcal,
+} from "../lib/dailyNutrition";
+import { loadWorkoutLogs } from "../lib/exerciseDayLog";
+import { MEAL_INTAKE_CHANGED, todayConsumedMealKcal } from "../lib/mealIntakeLog";
+import { getMcFitGeolocationPosition } from "../lib/mcfitGeolocation";
+import { loadMcFitSettings, weightKgForCalorieEstimate } from "../lib/mcfitSettings";
 
-const stats = [
-  { label: "我的积分", value: "1,280", icon: Star },
-  { label: "课包余额", value: "6 节", icon: Ticket },
-  { label: "优惠券", value: "2 张", icon: Ticket },
-  { label: "礼品卡", value: "¥0", icon: Gift },
-];
+function todayTitleZh(): string {
+  return new Date().toLocaleDateString("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+}
 
-const quick = [
-  { label: "最新任务", icon: Award, to: "/records" },
-  { label: "兑换", icon: ShoppingBag, to: "/settings" },
-  { label: "勋章馆", icon: Medal, to: "/records" },
-  { label: "满意度", icon: ScanLine, to: "/settings" },
-  { label: "积分商城", icon: Utensils, to: "/records" },
-];
+function ymdToday(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Shanghai" });
+}
+
+const listContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+} as const;
+
+const listItem = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 380, damping: 28 } },
+} as const;
 
 export function HomePage() {
+  const [now, setNow] = useState(() => new Date());
+  const [dataRev, setDataRev] = useState(0);
+  const [streakInfo, setStreakInfo] = useState<CheckInStreakInfo>(() => loadCheckInStreakInfo());
+  const [geo, setGeo] = useState<
+    | { status: "idle" | "pending" | "ok" | "denied" | "unavailable"; lat?: number; lng?: number }
+  >({ status: "idle" });
+
+  const refreshStreak = useCallback(() => {
+    setStreakInfo(loadCheckInStreakInfo());
+  }, []);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        setDataRev((n) => n + 1);
+      }
+    };
+    const onMeal = () => setDataRev((n) => n + 1);
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener(MEAL_INTAKE_CHANGED, onMeal);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener(MEAL_INTAKE_CHANGED, onMeal);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGeo({ status: "pending" });
+    getMcFitGeolocationPosition()
+      .then((pos) => {
+        if (cancelled) return;
+        setGeo({
+          status: "ok",
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setGeo({ status: typeof navigator !== "undefined" && navigator.geolocation ? "denied" : "unavailable" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const today = ymdToday();
+  const { weightKg, displayWeight, todayExerciseKcal } = useMemo(() => {
+    const s = loadMcFitSettings();
+    const w = weightKgForCalorieEstimate(s);
+    const disp =
+      s.currentWeightKg != null && s.currentWeightKg > 0
+        ? s.currentWeightKg
+        : s.initialWeightKg != null && s.initialWeightKg > 0
+          ? s.initialWeightKg
+          : null;
+    const lg = loadWorkoutLogs();
+    const ex = lg.filter((e) => e.ymd === today).reduce((a, b) => a + b.kcal, 0);
+    return { weightKg: w, displayWeight: disp, todayExerciseKcal: ex };
+  }, [today, dataRev]);
+
+  const budget = useMemo(
+    () =>
+      computeIntakeBudget({
+        weightKg,
+        exerciseBurnedTodayKcal: todayExerciseKcal,
+      }),
+    [weightKg, todayExerciseKcal],
+  );
+
+  const consumedMealKcal = useMemo(() => todayConsumedMealKcal(today), [today, dataRev]);
+  const remainingIntakeKcal = useMemo(
+    () =>
+      remainingIntakeAllowanceKcal({
+        fullDayIntakeBudgetKcal: budget.intakeBudgetKcal,
+        consumedKcalSoFar: consumedMealKcal,
+      }),
+    [budget.intakeBudgetKcal, consumedMealKcal],
+  );
+  const mealPlan = useMemo(() => buildMealPlanForNow(now, remainingIntakeKcal), [now, remainingIntakeKcal]);
+
+  const geoLine = useMemo(() => {
+    if (geo.status === "pending" || geo.status === "idle") {
+      return "定位中…";
+    }
+    if (geo.status === "ok" && geo.lat != null && geo.lng != null) {
+      return formatGeoLabel(geo.lat, geo.lng);
+    }
+    if (geo.status === "denied") {
+      return "未授权定位 · 餐单仍按时间与总预算拆分";
+    }
+    return "定位不可用 · 餐单仍按时间与总预算拆分";
+  }, [geo]);
+
+  const [checkInBusy, setCheckInBusy] = useState(false);
+
+  const onCheckIn = useCallback(async () => {
+    if (checkInBusy || streakInfo.checkedToday) {
+      return;
+    }
+    setCheckInBusy(true);
+    checkInForToday();
+    refreshStreak();
+    await runMcpMenuFetch();
+    setCheckInBusy(false);
+  }, [checkInBusy, streakInfo.checkedToday, refreshStreak]);
+
+  const checkInDisabled = streakInfo.checkedToday || checkInBusy;
+  const checkInBtnClass = checkInDisabled
+    ? streakInfo.checkedToday
+      ? "inline-flex h-12 w-full cursor-default items-center justify-center gap-2 rounded-xl border border-mcd-hairline bg-mcd-canvas px-4 text-sm font-extrabold text-mcd-ink-muted"
+      : "inline-flex h-12 w-full cursor-wait items-center justify-center gap-2 rounded-xl bg-linear-to-b from-mcd-gold to-[#f5a800] px-4 text-sm font-extrabold text-mcd-ink/80 shadow-sm opacity-90"
+    : "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-b from-mcd-gold to-[#f5a800] px-4 text-sm font-extrabold text-mcd-ink shadow-sm shadow-amber-900/10 transition active:scale-[0.98]";
+
   return (
-    <div className="space-y-4 sm:space-y-5 lg:space-y-8">
-      {/* 黄白条纹 Banner — 桌面占满首屏宽 */}
+    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
       <motion.section
-        className="mcd-stripe-hero relative overflow-hidden rounded-none px-4 py-10 sm:rounded-2xl sm:py-12 lg:rounded-3xl lg:px-12 lg:py-14"
+        className="mcd-stripe-hero relative overflow-hidden rounded-none px-4 py-8 sm:rounded-2xl sm:py-10 lg:rounded-3xl lg:px-10 lg:py-11"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -44,92 +182,165 @@ export function HomePage() {
             backgroundSize: "28px 28px, 36px 36px",
           }}
         />
-        <p className="relative text-center text-lg font-black uppercase tracking-[0.2em] text-mcd-ink sm:text-xl lg:text-2xl">
-          FEEL-GOOD MOMENT
+        <p className="relative text-center text-lg font-black uppercase tracking-[0.18em] text-mcd-ink sm:text-xl lg:text-2xl">
+          McFit 每日概览
         </p>
         <p className="relative mt-2 text-center text-sm font-medium text-mcd-ink/75">
-          与 McFit 一起，把训练变成小确幸
+          体重与热量目标一目了然 · 签到与餐食跟着时间与位置走
         </p>
       </motion.section>
 
-      {/* 四宫格数据 — 桌面 4 列横排 */}
-      <section className="px-3 sm:px-0">
-        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-2xl border border-mcd-hairline bg-mcd-white px-3 py-3.5 text-center shadow-sm lg:px-4 lg:py-5"
-            >
-              <div className="mx-auto flex size-8 items-center justify-center text-mcd-red">
-                <s.icon className="size-5" strokeWidth={2.2} aria-hidden />
-              </div>
-              <p className="mt-1.5 text-[0.65rem] font-bold text-mcd-ink-muted lg:text-xs">{s.label}</p>
-              <p className="mt-0.5 text-base font-black tabular-nums text-mcd-ink lg:text-lg">{s.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 大黄色 CTA — 桌面可与侧卡并排由 grid 控制 */}
-      <section className="px-3 sm:px-0 lg:grid lg:grid-cols-12 lg:items-stretch lg:gap-6">
-        <motion.div
-          className="flex items-center gap-3 rounded-2xl bg-mcd-gold px-4 py-4 shadow-sm lg:col-span-8 lg:rounded-3xl lg:px-8 lg:py-6"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05, duration: 0.35 }}
-        >
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-mcd-red/15 text-2xl lg:size-14">
-            🍟
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-black text-mcd-ink lg:text-lg">每日开练，优惠到</p>
-            <p className="text-xs font-medium text-mcd-ink/70">完成当日目标，解锁下一档奖励</p>
-          </div>
-          <Link
-            to="/records"
-            className="shrink-0 rounded-full bg-mcd-white px-4 py-2 text-sm font-extrabold text-mcd-red shadow-md transition-transform active:scale-95"
-          >
-            Go
-          </Link>
-        </motion.div>
-        <div className="mt-4 hidden rounded-2xl border border-dashed border-mcd-hairline bg-mcd-white p-4 lg:col-span-4 lg:mt-0 lg:flex lg:flex-col lg:justify-center">
-          <p className="text-sm font-extrabold text-mcd-ink">今日小贴士</p>
-          <p className="mt-1 text-xs leading-relaxed text-mcd-ink-muted">
-            大屏幕上banner 与多列更舒展；小屏继续纵向滑动。导航在左侧（桌面）或底部（手机）。
+      <motion.div
+        className="flex items-center justify-between gap-3 rounded-2xl border border-mcd-hairline bg-mcd-white px-4 py-3 shadow-sm"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-mcd-ink">
+            <span className="text-mcd-ink-muted">今日</span> · {todayTitleZh()}
+          </p>
+          <p className="mt-1 text-[0.7rem] font-bold text-mcd-ink-muted">
+            现在体重{" "}
+            <span className="font-extrabold tabular-nums text-mcd-ink/85">
+              {displayWeight != null ? `${displayWeight} kg` : `按估算 ${weightKg} kg`}
+            </span>
+            {displayWeight == null ? (
+              <span className="font-medium">（可在设置填写）</span>
+            ) : null}
+          </p>
+          <p className="mt-0.5 text-[0.65rem] font-medium leading-snug text-mcd-ink-muted">
+            估算一日消耗约{" "}
+            <span className="font-extrabold tabular-nums text-mcd-ink/70">{budget.tdeeKcal}</span>{" "}
+            kcal
+            {todayExerciseKcal > 0 ? (
+              <>
+                {" "}
+                · 今日运动 +{Math.round(todayExerciseKcal * 10) / 10} kcal 已计入摄入额度
+              </>
+            ) : null}
+            {consumedMealKcal > 0 ? (
+              <>
+                {" "}
+                · 饮食已记 {Math.round(consumedMealKcal * 10) / 10} kcal
+              </>
+            ) : null}
           </p>
         </div>
-      </section>
-
-      {/* 快捷圆钮 — 桌面 5 列，手机横向可卷或换行 */}
-      <section className="px-3 sm:px-0">
-        <h2 className="mb-3 text-sm font-extrabold text-mcd-ink-muted">快捷入口</h2>
-        <div className="grid grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-          {quick.map((q) => (
-            <Link
-              key={q.label}
-              to={q.to}
-              className="group flex flex-col items-center gap-1.5 rounded-2xl border border-mcd-hairline bg-mcd-white py-3 transition-colors hover:bg-mcd-list-row"
-            >
-              <span className="flex size-11 items-center justify-center rounded-full border-2 border-mcd-gold bg-mcd-gold/15 text-mcd-red group-hover:bg-mcd-gold/30 lg:size-12">
-                <q.icon className="size-5" strokeWidth={2.1} />
-              </span>
-              <span className="max-w-18 text-center text-[0.6rem] font-bold leading-tight text-mcd-ink sm:max-w-none sm:text-xs">
-                {q.label}
-              </span>
-            </Link>
-          ))}
+        <div className="shrink-0 text-right">
+          <p className="text-[0.65rem] font-extrabold tracking-wide text-mcd-ink-muted">今日还可摄入</p>
+          <p className="text-2xl font-black leading-none tabular-nums text-mcd-red sm:text-3xl">
+            {remainingIntakeKcal}
+            <span className="ml-0.5 text-sm font-extrabold text-mcd-ink/45">kcal</span>
+          </p>
+          <p className="mt-0.5 max-w-44 text-[0.65rem] font-medium leading-tight text-mcd-ink-muted sm:max-w-none">
+            在全日结束时仍保持 ≥{PLANNED_DAILY_DEFICIT_KCAL} kcal 缺口前提下 · 全日上限约{" "}
+            <span className="font-extrabold tabular-nums text-mcd-ink/75">{budget.intakeBudgetKcal}</span> kcal
+            {consumedMealKcal > 0 ? (
+              <>
+                {" "}
+                · 已记{" "}
+                <span className="font-extrabold tabular-nums text-mcd-ink/75">
+                  {Math.round(consumedMealKcal * 10) / 10}
+                </span>{" "}
+                kcal
+              </>
+            ) : null}
+          </p>
         </div>
-      </section>
+      </motion.div>
 
-      {/* 悬浮小助手角标 — 仅作装饰 */}
-      <div
-        className="pointer-events-none fixed bottom-24 right-3 z-20 select-none opacity-90 lg:bottom-8 lg:right-8"
-        aria-hidden
+      <motion.div
+        className="overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-4 shadow-sm sm:p-5"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.35 }}
       >
-        <div className="flex h-10 items-center justify-center rounded-full border border-mcd-gold/80 bg-mcd-gold px-3 text-xs font-extrabold text-mcd-ink shadow-md">
-          小助手
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mcd-gold/35 text-mcd-red">
+              <CalendarCheck2 className="size-5" strokeWidth={2.2} aria-hidden />
+            </span>
+            <div>
+              <p className="text-sm font-extrabold text-mcd-ink">每日签到</p>
+              <p className="mt-0.5 text-xs font-medium text-mcd-ink-muted">
+                {streakInfo.checkedToday
+                  ? "今日已签到；「饮食记录」页可确认推荐并记入热量"
+                  : "签到将请求定位 → 高德搜附近营业中的麦当劳 → MCP 出餐单（设置里填高德 Key、MCP Token、AI Key 与模型）"}
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={() => void onCheckIn()} disabled={checkInDisabled} className={checkInBtnClass}>
+            <CalendarCheck2 className="size-4" strokeWidth={2.2} aria-hidden />
+            {streakInfo.checkedToday ? "今日已签到" : checkInBusy ? "签到中…" : "签到"}
+          </button>
         </div>
-      </div>
+        <p className="mt-3 border-t border-mcd-hairline pt-3 text-center text-sm font-extrabold tabular-nums text-mcd-ink">
+          已连续签到{" "}
+          <span className="text-mcd-red">{streakInfo.streakDays}</span>{" "}
+          天
+        </p>
+      </motion.div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, duration: 0.35 }}
+      >
+        <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-mcd-ink-muted">
+            <UtensilsCrossed className="size-4 text-mcd-red" strokeWidth={2.2} aria-hidden />
+            今日餐食规划
+          </h2>
+        </div>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem] font-medium text-mcd-ink-muted">
+          <span className="inline-flex items-center gap-1">
+            <Flame className="size-3.5 text-orange-500" strokeWidth={2.2} aria-hidden />
+            上海时间 {mealPlan.shanghaiTimeLabel}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="size-3.5 text-mcd-red/80" strokeWidth={2.2} aria-hidden />
+            {geoLine}
+          </span>
+        </div>
+        <p className="mb-3 text-xs font-medium leading-relaxed text-mcd-ink-muted">
+          按<strong className="font-extrabold text-mcd-ink/80">当前还可摄入约 {remainingIntakeKcal} kcal</strong>{" "}
+          拆分尚未结束的餐段（全日上限 {budget.intakeBudgetKcal} kcal，结束时缺口 ≥ {PLANNED_DAILY_DEFICIT_KCAL}{" "}
+          kcal；代谢按体重×28 粗估约 {budget.tdeeKcal} kcal）。
+        </p>
+        <motion.ul
+          className="space-y-2.5"
+          variants={listContainer}
+          initial="hidden"
+          animate="show"
+        >
+          {mealPlan.rows.map((row) => (
+            <motion.li
+              key={row.id}
+              variants={listItem}
+              className="relative flex gap-3 overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-3.5 pl-3.5 shadow-sm"
+            >
+              <div
+                className="absolute left-0 top-0 h-full w-1 rounded-l-2xl bg-linear-to-b from-mcd-gold to-mcd-red/90"
+                aria-hidden
+              />
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-mcd-gold/20 text-mcd-red">
+                <UtensilsCrossed className="size-5" strokeWidth={2.2} aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-[0.95rem] font-extrabold text-mcd-ink">{row.label}</p>
+                  <p className="text-sm font-black tabular-nums text-mcd-red">
+                    ≈{row.targetKcal}
+                    <span className="ml-0.5 text-xs font-extrabold text-mcd-ink/50">kcal</span>
+                  </p>
+                </div>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-mcd-ink-muted">{row.hint}</p>
+              </div>
+            </motion.li>
+          ))}
+        </motion.ul>
+      </motion.section>
     </div>
   );
 }

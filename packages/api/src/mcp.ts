@@ -7,7 +7,17 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from "openai/resources/chat/completions";
-import { DEFAULT_MCD_MCP_BASE_URL, type RequestBody, type ResponseBody } from "./types.js";
+import {
+  DEFAULT_AI_MODEL,
+  DEFAULT_MCD_MCP_BASE_URL,
+  type RequestBody,
+  type ResponseBody,
+} from "./types.js";
+
+export type RunMcpAgentOptions = {
+  /** 非空则替换默认 system 提示（用于签到菜单等专用流程） */
+  systemPrompt?: string;
+};
 
 function resolveOptionalHttpBase(
   value: string | undefined,
@@ -30,7 +40,6 @@ function resolveOptionalHttpBase(
 /** 文档载明服务端支持 MCP 2025-06-18 及之前版本 */
 const MCD_MCP_PROTOCOL_VERSION = "2025-06-18";
 
-const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 12;
 
 function mcpToolToOpenAI(tool: {
@@ -85,13 +94,19 @@ function formatMcpToolResult(
  * - `aitoken`：OpenAI 兼容 `apiKey`。
  * - `mcpBaseUrl`：可选，省略则用 {@link DEFAULT_MCD_MCP_BASE_URL}。
  * - `aiBaseUrl`：可选，作为 OpenAI 客户端的 `baseURL`（兼容代理或自建端点）。
+ * - `model`：可选，OpenAI 兼容 `model`；省略则用 {@link DEFAULT_AI_MODEL}。
  */
-export async function runMcpAgent(body: RequestBody): Promise<ResponseBody> {
+export async function runMcpAgent(
+  body: RequestBody,
+  options?: RunMcpAgentOptions,
+): Promise<ResponseBody> {
   const mcptoken = body.mcptoken.trim();
   const aitoken = body.aitoken.trim();
   if (!mcptoken || !aitoken || !body.prompt.trim()) {
     throw new Error("mcptoken、aitoken 与 prompt 均不能为空");
   }
+
+  const model = body.model?.trim() || DEFAULT_AI_MODEL;
 
   const mcpBaseResolved =
     resolveOptionalHttpBase(body.mcpBaseUrl, "mcpBaseUrl") ??
@@ -125,18 +140,22 @@ export async function runMcpAgent(body: RequestBody): Promise<ResponseBody> {
       mcpToolToOpenAI(t),
     );
 
+    const defaultSystem =
+      "你是协助用户使用麦当劳中国 MCP 工具的助手。需要优惠券、点餐、门店、营养信息等事实时，必须调用提供的工具获取结果，再用简洁中文总结给用户。不要编造订单或券信息。";
+    const systemContent =
+      options?.systemPrompt?.trim() ? options.systemPrompt.trim() : defaultSystem;
+
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
-        content:
-          "你是协助用户使用麦当劳中国 MCP 工具的助手。需要优惠券、点餐、门店、营养信息等事实时，必须调用提供的工具获取结果，再用简洁中文总结给用户。不要编造订单或券信息。",
+        content: systemContent,
       },
       { role: "user", content: body.prompt },
     ];
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const completion = await openai.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model,
         messages,
         tools: openaiTools.length > 0 ? openaiTools : undefined,
       });

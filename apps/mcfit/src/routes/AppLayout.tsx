@@ -9,6 +9,7 @@ import {
   Settings,
   Sparkles,
   User,
+  UtensilsCrossed,
 } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getGreeting } from "../lib/greeting";
@@ -17,6 +18,7 @@ const shellTitles: Record<string, { t: string; s: string }> = {
   "/": { t: "今日开练", s: "让每次训练都简单可完成" },
   "/settings": { t: "设置", s: "账户、通知与偏好" },
   "/records": { t: "运动记录", s: "本日与历史" },
+  "/meal-record": { t: "饮食记录", s: "MCP 推荐与已享用" },
 };
 
 const sidebarLink = ({ isActive }: { isActive: boolean }) =>
@@ -42,7 +44,7 @@ export function AppLayout() {
   return (
     <div className="font-sans flex min-h-dvh flex-col bg-mcd-canvas text-mcd-ink lg:flex-row">
       {/* —— 桌面：左侧导航 —— */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-mcd-hairline bg-mcd-white [box-shadow:var(--shadow-mcd-sidebar)] lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-40">
+      <aside className="hidden h-dvh w-56 shrink-0 flex-col border-r border-mcd-hairline bg-mcd-white [box-shadow:var(--shadow-mcd-sidebar)] lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-40">
         <div className="flex items-center gap-2.5 border-b border-mcd-hairline px-4 py-4">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mcd-gold text-base font-black text-mcd-ink">
             M
@@ -52,7 +54,7 @@ export function AppLayout() {
             <p className="text-sm font-extrabold">健身助手</p>
           </div>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 p-2" aria-label="侧栏">
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2" aria-label="侧栏">
           <NavLink to="/" end className={sidebarLink}>
             <LayoutDashboard className="size-4" aria-hidden />
             概览
@@ -61,12 +63,18 @@ export function AppLayout() {
             <ClipboardList className="size-4" aria-hidden />
             运动记录
           </NavLink>
+          <NavLink to="/meal-record" className={sidebarLink}>
+            <UtensilsCrossed className="size-4" aria-hidden />
+            饮食记录
+          </NavLink>
           <NavLink to="/settings" className={sidebarLink}>
             <Settings className="size-4" aria-hidden />
             设置
           </NavLink>
         </nav>
-        <div className="border-t border-mcd-hairline p-3 text-[0.7rem] text-mcd-ink-muted">桌面版 · 大留白多列</div>
+        <div className="shrink-0 border-t border-mcd-hairline p-3 text-[0.65rem] leading-snug text-mcd-ink-muted">
+          本地 MCP 需先构建 <span className="font-mono text-[0.6rem]">@mcfit/api</span>
+        </div>
       </aside>
 
       {/* 主区：含顶栏 + 内容（移动端含底栏位） */}
@@ -83,6 +91,18 @@ export function AppLayout() {
             </div>
           </div>
           <div className="flex items-center gap-0.5">
+            <NavLink
+              to="/meal-record"
+              className={({ isActive }) =>
+                [
+                  "flex size-9 items-center justify-center rounded-full lg:hidden",
+                  isActive ? "bg-mcd-gold/25 text-mcd-red" : "hover:bg-mcd-canvas text-mcd-ink",
+                ].join(" ")
+              }
+              aria-label="饮食记录"
+            >
+              <UtensilsCrossed className="size-5" strokeWidth={2.2} />
+            </NavLink>
             <span className="relative flex size-9 items-center justify-center rounded-full hover:bg-mcd-canvas" aria-label="有未读">
               <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-mcd-red" />
               <Bell className="size-5 text-mcd-ink" strokeWidth={2} />
