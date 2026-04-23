@@ -1,5 +1,4 @@
 import {
-  Bell,
   ChevronLeft,
   ClipboardList,
   Dumbbell,
@@ -12,6 +11,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import siteLogo from "../assets/logo2.png";
 import { getGreeting } from "../lib/greeting";
 
 const shellTitles: Record<string, { t: string; s: string }> = {
@@ -24,7 +24,7 @@ const shellTitles: Record<string, { t: string; s: string }> = {
 const sidebarLink = ({ isActive }: { isActive: boolean }) =>
   [
     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
-    isActive ? "bg-mcd-gold/25 text-mcd-red" : "text-mcd-ink/80 hover:bg-black/5",
+    isActive ? "bg-mcd-gold/25 text-mcd-red" : "text-mcd-ink/80 hover:bg-black/5 dark:hover:bg-white/10",
   ].join(" ");
 
 const mobileTabClass = ({ isActive }: { isActive: boolean }) =>
@@ -46,9 +46,14 @@ export function AppLayout() {
       {/* —— 桌面：左侧导航 —— */}
       <aside className="hidden h-dvh w-56 shrink-0 flex-col border-r border-mcd-hairline bg-mcd-white [box-shadow:var(--shadow-mcd-sidebar)] lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-40">
         <div className="flex items-center gap-2.5 border-b border-mcd-hairline px-4 py-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mcd-gold text-base font-black text-mcd-ink">
-            M
-          </div>
+          <img
+            src={siteLogo}
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 shrink-0 object-contain shadow-sm"
+            decoding="async"
+          />
           <div>
             <p className="text-xs font-extrabold text-mcd-ink/45">McFit</p>
             <p className="text-sm font-extrabold">健身助手</p>
@@ -79,35 +84,34 @@ export function AppLayout() {
 
       {/* 主区：含顶栏 + 内容（移动端含底栏位） */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:ml-56">
-        {/* 顶栏：参考 App 白底 + 问候 + 铃铛 */}
+        {/* 顶栏：白底 + 问候；移动端提供饮食记录快捷入口 */}
         <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between gap-3 border-b border-mcd-hairline bg-mcd-white px-3 py-2.5 pt-[max(0.5rem,env(safe-area-inset-top,0))] sm:px-4 lg:px-6 lg:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-mcd-gold text-sm font-black lg:hidden">
-              M
-            </div>
+            <img
+              src={siteLogo}
+              alt=""
+              width={36}
+              height={36}
+              className="size-9 shrink-0 object-contain shadow-sm lg:hidden"
+              decoding="async"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold sm:text-base">{greet.line}</p>
               <p className="truncate text-xs text-mcd-ink-muted">{greet.sub}</p>
             </div>
           </div>
-          <div className="flex items-center gap-0.5">
-            <NavLink
-              to="/meal-record"
-              className={({ isActive }) =>
-                [
-                  "flex size-9 items-center justify-center rounded-full lg:hidden",
-                  isActive ? "bg-mcd-gold/25 text-mcd-red" : "hover:bg-mcd-canvas text-mcd-ink",
-                ].join(" ")
-              }
-              aria-label="饮食记录"
-            >
-              <UtensilsCrossed className="size-5" strokeWidth={2.2} />
-            </NavLink>
-            <span className="relative flex size-9 items-center justify-center rounded-full hover:bg-mcd-canvas" aria-label="有未读">
-              <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-mcd-red" />
-              <Bell className="size-5 text-mcd-ink" strokeWidth={2} />
-            </span>
-          </div>
+          <NavLink
+            to="/meal-record"
+            className={({ isActive }) =>
+              [
+                "flex size-9 shrink-0 items-center justify-center rounded-full lg:hidden",
+                isActive ? "bg-mcd-gold/25 text-mcd-red" : "hover:bg-mcd-canvas text-mcd-ink",
+              ].join(" ")
+            }
+            aria-label="饮食记录"
+          >
+            <UtensilsCrossed className="size-5" strokeWidth={2.2} />
+          </NavLink>
         </header>
 
         {/* 子页标题条（非首页在移动端显示返回；桌面不突出） */}

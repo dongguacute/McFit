@@ -91,7 +91,7 @@ function tabClass(active: boolean, compact: boolean): string {
   const base = [
     "flex-1 rounded-xl px-2 py-2 text-center font-bold transition-colors",
     compact ? "text-[0.65rem]" : "text-xs",
-    active ? "bg-mcd-gold/25 text-mcd-red" : "text-mcd-ink/80 hover:bg-black/5",
+    active ? "bg-mcd-gold/25 text-mcd-red" : "text-mcd-ink/80 hover:bg-black/5 dark:hover:bg-white/10",
   ];
   return base.join(" ");
 }

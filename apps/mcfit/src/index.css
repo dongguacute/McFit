@@ -1,35 +1,70 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --mcd-ink: #181818;
+  --mcd-ink-muted: #5c5c5c;
+  --mcd-canvas: #f5f5f5;
+  --mcd-surface: #ffffff;
+  --mcd-hairline: #e8e8e8;
+  --mcd-list-row: #fafafa;
+  --mcd-gold: #ffbc0d;
+  --mcd-red: #da291c;
+  --mcd-red-deep: #b81814;
+  --mcd-link: #2563eb;
+  --mcd-stripe-hero-bg: #fff8e0;
+  --mcd-stripe-a: #ffbc0d;
+  --mcd-stripe-b: #ffffff;
+  --mcd-shadow-phone: 0 25px 50px -12px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.04);
+  --mcd-shadow-sidebar: 1px 0 0 0 rgb(0 0 0 / 0.06);
+}
+
+.dark {
+  --mcd-ink: #e8e8ea;
+  --mcd-ink-muted: #9ca3af;
+  --mcd-canvas: #0f0f0f;
+  --mcd-surface: #1a1a1c;
+  --mcd-hairline: #2c2c30;
+  --mcd-list-row: #222226;
+  --mcd-link: #60a5fa;
+  --mcd-stripe-hero-bg: #141210;
+  --mcd-stripe-a: #5c3d24;
+  --mcd-stripe-b: #0a0a0b;
+  --mcd-shadow-phone: 0 25px 50px -12px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.05);
+  --mcd-shadow-sidebar: 1px 0 0 0 rgb(255 255 255 / 0.08);
+}
+
 @theme {
   --font-sans: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui,
     sans-serif;
-  --color-mcd-gold: #ffbc0d;
-  --color-mcd-red: #da291c;
-  --color-mcd-red-deep: #b81814;
-  --color-mcd-white: #ffffff;
-  --color-mcd-ink: #181818;
-  --color-mcd-ink-muted: #5c5c5c;
-  --color-mcd-hairline: #e8e8e8;
-  --color-mcd-link: #2563eb;
-  --color-mcd-canvas: #f5f5f5;
-  --color-mcd-list-row: #fafafa;
-  --shadow-mcd-phone: 0 25px 50px -12px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.04);
-  --shadow-mcd-sidebar: 1px 0 0 0 rgb(0 0 0 / 0.06);
+  --color-mcd-gold: var(--mcd-gold);
+  --color-mcd-red: var(--mcd-red);
+  --color-mcd-red-deep: var(--mcd-red-deep);
+  --color-mcd-white: var(--mcd-surface);
+  --color-mcd-ink: var(--mcd-ink);
+  --color-mcd-ink-muted: var(--mcd-ink-muted);
+  --color-mcd-hairline: var(--mcd-hairline);
+  --color-mcd-link: var(--mcd-link);
+  --color-mcd-canvas: var(--mcd-canvas);
+  --color-mcd-list-row: var(--mcd-list-row);
+  --shadow-mcd-phone: var(--mcd-shadow-phone);
+  --shadow-mcd-sidebar: var(--mcd-shadow-sidebar);
 }
 
 body {
   @apply min-h-dvh bg-mcd-canvas font-sans text-mcd-ink antialiased;
 }
 
-/* 首页横幅：金白竖条底纹 */
+/* 首页横幅：金白竖条底纹（随深浅色变量变） */
 .mcd-stripe-hero {
-  background-color: #fff8e0;
+  background-color: var(--mcd-stripe-hero-bg);
   background-image: repeating-linear-gradient(
     90deg,
-    #ffbc0d 0,
-    #ffbc0d 6px,
-    #ffffff 6px,
-    #ffffff 12px
+    var(--mcd-stripe-a) 0,
+    var(--mcd-stripe-a) 6px,
+    var(--mcd-stripe-b) 6px,
+    var(--mcd-stripe-b) 12px
   );
   background-size: 12px 100%;
 }

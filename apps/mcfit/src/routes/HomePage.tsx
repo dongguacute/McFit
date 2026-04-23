@@ -1,6 +1,6 @@
-import { CalendarCheck2, Flame, MapPin, UtensilsCrossed } from "lucide-react";
+import { CalendarCheck2, ChevronRight, Flame, MapPin, Pencil, UtensilsCrossed, Weight } from "lucide-react";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   checkInForToday,
   loadCheckInStreakInfo,
@@ -17,7 +17,7 @@ import {
 import { loadWorkoutLogs } from "../lib/exerciseDayLog";
 import { MEAL_INTAKE_CHANGED, todayConsumedMealKcal } from "../lib/mealIntakeLog";
 import { getMcFitGeolocationPosition } from "../lib/mcfitGeolocation";
-import { loadMcFitSettings, weightKgForCalorieEstimate } from "../lib/mcfitSettings";
+import { loadMcFitSettings, saveMcFitSettings, weightKgForCalorieEstimate } from "../lib/mcfitSettings";
 
 function todayTitleZh(): string {
   return new Date().toLocaleDateString("zh-CN", {
@@ -147,6 +147,54 @@ export function HomePage() {
   }, [geo]);
 
   const [checkInBusy, setCheckInBusy] = useState(false);
+  const [weightDialogOpen, setWeightDialogOpen] = useState(false);
+  const [currentWeightDraft, setCurrentWeightDraft] = useState("");
+  const weightDialogTitleId = useId();
+  const weightFieldId = useId();
+
+  const openWeightDialog = useCallback(() => {
+    const s = loadMcFitSettings();
+    if (s.currentWeightKg != null && s.currentWeightKg > 0) {
+      setCurrentWeightDraft(String(s.currentWeightKg));
+    } else {
+      const disp =
+        s.initialWeightKg != null && s.initialWeightKg > 0 ? s.initialWeightKg : null;
+      setCurrentWeightDraft(disp != null ? String(disp) : String(weightKgForCalorieEstimate(s)));
+    }
+    setWeightDialogOpen(true);
+  }, []);
+
+  const closeWeightDialog = useCallback(() => {
+    setWeightDialogOpen(false);
+  }, []);
+
+  const saveCurrentWeight = useCallback(() => {
+    const t = currentWeightDraft.trim().replace(",", ".");
+    let currentWeightKg: number | null = null;
+    if (t) {
+      const n = Number.parseFloat(t);
+      if (Number.isFinite(n) && n >= 0) {
+        currentWeightKg = Math.round(n * 10) / 10;
+      }
+    }
+    const s = loadMcFitSettings();
+    saveMcFitSettings({ ...s, currentWeightKg });
+    setDataRev((n) => n + 1);
+    setWeightDialogOpen(false);
+  }, [currentWeightDraft]);
+
+  useEffect(() => {
+    if (!weightDialogOpen) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setWeightDialogOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [weightDialogOpen]);
 
   const onCheckIn = useCallback(async () => {
     if (checkInBusy || streakInfo.checkedToday) {
@@ -200,15 +248,45 @@ export function HomePage() {
           <p className="text-sm font-extrabold text-mcd-ink">
             <span className="text-mcd-ink-muted">今日</span> · {todayTitleZh()}
           </p>
-          <p className="mt-1 text-[0.7rem] font-bold text-mcd-ink-muted">
-            现在体重{" "}
-            <span className="font-extrabold tabular-nums text-mcd-ink/85">
-              {displayWeight != null ? `${displayWeight} kg` : `按估算 ${weightKg} kg`}
-            </span>
-            {displayWeight == null ? (
-              <span className="font-medium">（可在设置填写）</span>
-            ) : null}
-          </p>
+          <div className="mt-2 w-full min-w-0 sm:max-w-sm">
+            <button
+              type="button"
+              onClick={openWeightDialog}
+              aria-label={displayWeight == null ? "填写现在体重" : "修改现在体重"}
+              className="group flex w-full min-w-0 items-center justify-between gap-2 rounded-2xl border-2 border-mcd-gold/60 bg-linear-to-b from-mcd-gold/25 to-mcd-gold/10 px-3 py-2.5 text-left shadow-sm ring-mcd-gold/30 transition active:scale-[0.99] hover:border-mcd-gold hover:from-mcd-gold/35 hover:to-mcd-gold/15 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-mcd-red/25"
+            >
+              <span className="flex min-w-0 flex-1 items-center gap-2.5">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-mcd-white/80 text-mcd-red shadow-sm ring-1 ring-mcd-gold/40"
+                  aria-hidden
+                >
+                  <Weight className="size-4" strokeWidth={2.2} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.65rem] font-extrabold uppercase tracking-wide text-mcd-ink/55">
+                    现在体重
+                  </span>
+                  <span className="mt-0.5 block text-base font-black tabular-nums leading-none text-mcd-ink sm:text-lg">
+                    {displayWeight != null ? `${displayWeight} kg` : `按估算 ${weightKg} kg`}
+                  </span>
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-0.5 text-xs font-extrabold text-mcd-red/90 sm:text-sm">
+                <Pencil className="size-3.5 sm:size-4" strokeWidth={2.2} aria-hidden />
+                <span className="hidden min-[360px]:inline">
+                  {displayWeight == null ? "去填写" : "修改"}
+                </span>
+                <ChevronRight
+                  className="size-4 opacity-70 transition group-hover:translate-x-0.5 sm:size-5"
+                  strokeWidth={2.2}
+                  aria-hidden
+                />
+              </span>
+            </button>
+            <p className="mt-1.5 pl-0.5 text-[0.6rem] font-semibold text-mcd-ink-muted/90">
+              点按此处即可更新，与「设置」中的现在体重一致
+            </p>
+          </div>
           <p className="mt-0.5 text-[0.65rem] font-medium leading-snug text-mcd-ink-muted">
             估算一日消耗约{" "}
             <span className="font-extrabold tabular-nums text-mcd-ink/70">{budget.tdeeKcal}</span>{" "}
@@ -341,6 +419,66 @@ export function HomePage() {
           ))}
         </motion.ul>
       </motion.section>
+
+      {weightDialogOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+          <button
+            type="button"
+            onClick={closeWeightDialog}
+            className="absolute inset-0 cursor-default border-0 bg-mcd-ink/40 p-0"
+            aria-label="关闭"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={weightDialogTitleId}
+            className="relative w-full max-w-sm rounded-t-2xl border border-mcd-hairline bg-mcd-white p-4 shadow-2xl sm:rounded-2xl sm:p-5"
+          >
+            <h2 id={weightDialogTitleId} className="text-base font-extrabold text-mcd-ink">
+              现在体重
+            </h2>
+            <p className="mt-1 text-xs font-medium text-mcd-ink-muted">
+              与设置页中的「现在体重」同步；留空并保存会清除，回退为初始体重或默认估算。
+            </p>
+            <div className="relative mt-3 flex items-center gap-2">
+              <input
+                id={weightFieldId}
+                name="currentWeightKg"
+                type="text"
+                inputMode="decimal"
+                value={currentWeightDraft}
+                onChange={(e) => setCurrentWeightDraft(e.target.value)}
+                placeholder="例如 68.0"
+                className="min-w-0 flex-1 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-medium text-mcd-ink tabular-nums placeholder:text-mcd-ink-muted/50 focus:border-mcd-red/40 focus:outline-none focus:ring-2 focus:ring-mcd-red/15"
+                autoFocus
+                aria-describedby={`${weightFieldId}-unit`}
+              />
+              <span
+                id={`${weightFieldId}-unit`}
+                className="shrink-0 rounded-xl border border-mcd-hairline bg-mcd-canvas px-3 py-2.5 text-sm font-extrabold text-mcd-ink-muted"
+              >
+                kg
+              </span>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeWeightDialog}
+                className="rounded-full border border-mcd-hairline bg-mcd-white px-4 py-2 text-sm font-extrabold text-mcd-ink transition active:scale-[0.98]"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={saveCurrentWeight}
+                className="rounded-full bg-mcd-red px-4 py-2 text-sm font-extrabold text-mcd-white shadow-sm transition active:scale-[0.98]"
+              >
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

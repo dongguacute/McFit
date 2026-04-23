@@ -3,6 +3,9 @@ import { DEFAULT_WEIGHT_KG_FOR_BURN } from "./exerciseEnergy";
 
 const STORAGE_KEY = "mcfit_settings_v1";
 
+/** 与系统设置一并持久化；`system` 时依 `prefers-color-scheme` 切换 `html.dark` */
+export type McFitThemeMode = "light" | "dark" | "system";
+
 export type McFitSettings = {
   /**
    * 高德开放平台 Web 服务 Key（用于周边搜索麦当劳门店）。
@@ -23,6 +26,8 @@ export type McFitSettings = {
   initialWeightKg: number | null;
   /** 现在体重（千克），运动耗热优先用此项；可随你定期在设置里更新 */
   currentWeightKg: number | null;
+  /** 界面主题 */
+  theme: McFitThemeMode;
 };
 
 const defaults: McFitSettings = {
@@ -34,6 +39,7 @@ const defaults: McFitSettings = {
   aiModel: DEFAULT_AI_MODEL,
   initialWeightKg: null,
   currentWeightKg: null,
+  theme: "system",
 };
 
 export function loadMcFitSettings(): McFitSettings {
@@ -52,6 +58,9 @@ export function loadMcFitSettings(): McFitSettings {
     const wc = p.currentWeightKg;
     const currentWeightKg =
       typeof wc === "number" && Number.isFinite(wc) && wc >= 0 ? wc : null;
+    const th = p.theme;
+    const theme: McFitThemeMode =
+      th === "light" || th === "dark" || th === "system" ? th : "system";
     return {
       amapWebKey: typeof p.amapWebKey === "string" ? p.amapWebKey : "",
       mcpBaseUrl: typeof p.mcpBaseUrl === "string" ? p.mcpBaseUrl : "",
@@ -64,6 +73,7 @@ export function loadMcFitSettings(): McFitSettings {
           : DEFAULT_AI_MODEL,
       initialWeightKg,
       currentWeightKg,
+      theme,
     };
   } catch {
     return { ...defaults };

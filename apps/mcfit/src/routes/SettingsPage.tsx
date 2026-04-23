@@ -1,9 +1,26 @@
 import { DEFAULT_AI_MODEL } from "@mcfit/api";
-import { Bot, Eye, EyeOff, Key, KeyRound, Link2, MapPin, Save, Scale, Server, Trash2, Weight } from "lucide-react";
+import {
+  Bot,
+  Eye,
+  EyeOff,
+  Key,
+  KeyRound,
+  Link2,
+  MapPin,
+  Monitor,
+  Moon,
+  Save,
+  Scale,
+  Server,
+  Sun,
+  Trash2,
+  Weight,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { clearAllAppDataExceptSettings } from "../lib/devResetNonSettings";
 import { loadMcFitSettings, saveMcFitSettings } from "../lib/mcfitSettings";
+import { setThemeMode as persistThemeMode, type McFitThemeMode } from "../lib/theme";
 
 const AI_MODEL_PRESETS = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
 const AI_MODEL_CUSTOM = "__custom__";
@@ -33,6 +50,7 @@ export function SettingsPage() {
   const [initialWeightInput, setInitialWeightInput] = useState("");
   const [currentWeightInput, setCurrentWeightInput] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [themeMode, setThemeModeLocal] = useState<McFitThemeMode>("system");
 
   useEffect(() => {
     const s = loadMcFitSettings();
@@ -48,6 +66,7 @@ export function SettingsPage() {
     setCurrentWeightInput(
       s.currentWeightKg != null ? String(s.currentWeightKg) : "",
     );
+    setThemeModeLocal(s.theme);
   }, []);
 
   const onSave = useCallback(() => {
@@ -77,9 +96,20 @@ export function SettingsPage() {
       aiModel: modelTrim || DEFAULT_AI_MODEL,
       initialWeightKg,
       currentWeightKg,
+      theme: themeMode,
     });
     setSavedAt(Date.now());
-  }, [amapWebKey, mcpBaseUrl, mcpToken, aiApiBaseUrl, aiApiKey, aiModel, initialWeightInput, currentWeightInput]);
+  }, [
+    amapWebKey,
+    mcpBaseUrl,
+    mcpToken,
+    aiApiBaseUrl,
+    aiApiKey,
+    aiModel,
+    initialWeightInput,
+    currentWeightInput,
+    themeMode,
+  ]);
 
   const onDevClearData = useCallback(() => {
     const ok = window.confirm(
@@ -99,6 +129,43 @@ export function SettingsPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      <div>
+        <h2 className="text-2xl font-black tracking-tight text-mcd-ink">外观</h2>
+        <p className="mt-1 text-sm font-medium leading-relaxed text-mcd-ink-muted">
+          浅色、深色，或跟随系统；点击后立即生效并写入本机（「保存全部」也会带上当前外观选项）。
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(
+            [
+              { m: "system" as const, label: "跟随系统", Icon: Monitor },
+              { m: "light" as const, label: "浅色", Icon: Sun },
+              { m: "dark" as const, label: "深色", Icon: Moon },
+            ] as const
+          ).map(({ m, label, Icon }) => {
+            const on = themeMode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  persistThemeMode(m);
+                  setThemeModeLocal(m);
+                }}
+                className={[
+                  "inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm font-extrabold transition active:scale-[0.99]",
+                  on
+                    ? "border-mcd-red/50 bg-mcd-gold/20 text-mcd-red ring-2 ring-mcd-red/20"
+                    : "border-mcd-hairline bg-mcd-white text-mcd-ink hover:bg-mcd-list-row",
+                ].join(" ")}
+              >
+                <Icon className="size-4 shrink-0" strokeWidth={2.2} aria-hidden />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <h2 className="text-2xl font-black tracking-tight text-mcd-ink">连接</h2>
       <p className="text-sm font-medium leading-relaxed text-mcd-ink-muted">
         配置高德选店、麦当劳 MCP 与 OpenAI 兼容的地址和密钥；数据保存在本机浏览器，由你在调用后端时一并传入。
@@ -195,7 +262,7 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowMcpToken((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-mcd-ink-muted hover:bg-black/5 hover:text-mcd-ink"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-mcd-ink-muted hover:bg-black/5 hover:text-mcd-ink dark:hover:bg-white/10"
                 aria-label={showMcpToken ? "隐藏 Token" : "显示 Token"}
               >
                 {showMcpToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -255,7 +322,7 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowAiKey((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-mcd-ink-muted hover:bg-black/5 hover:text-mcd-ink"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-mcd-ink-muted hover:bg-black/5 hover:text-mcd-ink dark:hover:bg-white/10"
                 aria-label={showAiKey ? "隐藏 API Key" : "显示 API Key"}
               >
                 {showAiKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -402,19 +469,19 @@ export function SettingsPage() {
       </div>
 
       {import.meta.env.DEV ? (
-        <div className="rounded-2xl border border-dashed border-amber-700/45 bg-amber-50/90 p-4 shadow-sm">
-          <h3 className="flex items-center gap-2 text-sm font-extrabold text-amber-950">
+        <div className="rounded-2xl border border-dashed border-amber-700/45 bg-amber-50/90 p-4 shadow-sm dark:border-amber-500/40 dark:bg-amber-950/35">
+          <h3 className="flex items-center gap-2 text-sm font-extrabold text-amber-950 dark:text-amber-100">
             <Trash2 className="size-4 shrink-0" strokeWidth={2.2} aria-hidden />
             开发
           </h3>
-          <p className="mt-1.5 text-xs font-medium leading-relaxed text-amber-950/80">
+          <p className="mt-1.5 text-xs font-medium leading-relaxed text-amber-950/80 dark:text-amber-200/85">
             仅开发模式显示。清空签到、运动记录、饮食记入、今日 MCP 菜单等本地数据，<span className="font-extrabold">不删除</span>
             本页连接与身体设置。
           </p>
           <button
             type="button"
             onClick={onDevClearData}
-            className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-800/30 bg-mcd-white px-4 py-2.5 text-xs font-extrabold text-amber-950 shadow-sm transition hover:bg-amber-100/80"
+            className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-800/30 bg-mcd-white px-4 py-2.5 text-xs font-extrabold text-amber-950 shadow-sm transition hover:bg-amber-100/80 dark:border-amber-400/25 dark:text-amber-100 dark:hover:bg-amber-900/50"
           >
             <Trash2 className="size-3.5" strokeWidth={2.2} aria-hidden />
             清空测试数据（保留设置）
