@@ -100,15 +100,13 @@ export function TodayMenuPanel({ compact }: Props) {
   const menu = useTodayMcpMenuState();
   const intakes = useTodayMealIntake();
   const [tab, setTab] = useState<SidebarTab>("recommend");
-  const [refetching, setRefetching] = useState(false);
   const today = ymdInBeijing();
+  const fetchPending = Boolean(menu?.mcpFetchPending);
 
   const intakeSum = useMemo(() => intakes.reduce((a, b) => a + b.kcal, 0), [intakes]);
 
   const onRefetch = useCallback(async () => {
-    setRefetching(true);
     await runMcpMenuFetch();
-    setRefetching(false);
   }, []);
 
   const onConsume = useCallback((item: McpMenuItem) => {
@@ -179,11 +177,11 @@ export function TodayMenuPanel({ compact }: Props) {
             <button
               type="button"
               onClick={() => void onRefetch()}
-              disabled={refetching}
+              disabled={fetchPending}
               className="shrink-0 rounded-lg p-1 text-mcd-red transition hover:bg-mcd-red/10 disabled:opacity-50"
               aria-label="重试拉取"
             >
-              {refetching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
+              {fetchPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
             </button>
           ) : null}
         </div>
@@ -196,21 +194,38 @@ export function TodayMenuPanel({ compact }: Props) {
               </p>
             ) : null}
 
-            {menu?.nearestStoreName ? (
-              <p className="mb-2 flex items-start gap-1 text-[0.65rem] font-medium text-mcd-ink-muted">
-                <MapPin className="mt-0.5 size-3 shrink-0 text-mcd-red/70" strokeWidth={2.2} aria-hidden />
-                <span>
-                  <span className="font-extrabold text-mcd-ink/80">{menu.nearestStoreName}</span>
-                  {menu.nearestStoreDetail ? (
-                    <span className="mt-0.5 block text-[0.6rem] leading-snug">{menu.nearestStoreDetail}</span>
-                  ) : null}
-                </span>
+            {fetchPending ? (
+              <p
+                className="mb-2 flex items-center gap-1.5 text-[0.7rem] font-extrabold text-mcd-red"
+                role="status"
+                aria-live="polite"
+              >
+                <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
+                正在获取…
               </p>
             ) : null}
 
-            {!menu || menu.items.length === 0 ? (
+            {menu?.nearestStoreName ? (
+              <div className="mb-2">
+                <p className="flex items-start gap-1 text-[0.65rem] font-medium text-mcd-ink-muted">
+                  <MapPin className="mt-0.5 size-3 shrink-0 text-mcd-red/70" strokeWidth={2.2} aria-hidden />
+                  <span>
+                    <span className="font-extrabold text-mcd-ink/80">{menu.nearestStoreName}</span>
+                    {menu.nearestStoreDetail ? (
+                      <span className="mt-0.5 block text-[0.6rem] leading-snug">{menu.nearestStoreDetail}</span>
+                    ) : null}
+                  </span>
+                </p>
+                <p className="mt-1.5 pl-4 text-[0.58rem] font-medium leading-snug text-mcd-ink-muted/95">
+                  定位与门店信息仅供参考，并非绝对准确，请以实际门店与现场情况为准。
+                </p>
+              </div>
+            ) : null}
+
+            {!menu || (menu.items.length === 0 && !fetchPending) ? (
               <p className={`${subSz} font-medium text-mcd-ink-muted`}>暂无；请先签到拉取。</p>
-            ) : (
+            ) : null}
+            {menu && menu.items.length > 0 ? (
               <ul className="space-y-2.5">
                 {menu.items.map((item) => {
                   const imgs = item.imageUrls ?? [];
@@ -272,7 +287,7 @@ export function TodayMenuPanel({ compact }: Props) {
                   );
                 })}
               </ul>
-            )}
+            ) : null}
           </>
         ) : (
           <>

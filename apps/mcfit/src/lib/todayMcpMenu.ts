@@ -21,6 +21,8 @@ export type McpMenuItem = {
 
 export type TodayMcpMenuState = {
   ymd: string;
+  /** 正请求定位 / 高德 / MCP 生成餐单时为 true */
+  mcpFetchPending?: boolean;
   nearestStoreName?: string;
   nearestStoreDetail?: string;
   items: McpMenuItem[];
@@ -66,6 +68,7 @@ function loadRaw(): TodayMcpMenuState | null {
       });
     return {
       ymd: p.ymd,
+      mcpFetchPending: p.mcpFetchPending === true,
       nearestStoreName: typeof p.nearestStoreName === "string" ? p.nearestStoreName : undefined,
       nearestStoreDetail: typeof p.nearestStoreDetail === "string" ? p.nearestStoreDetail : undefined,
       items,
@@ -114,5 +117,27 @@ export function updateMcpMenuItem(
 export function setMcpMenuError(ymd: string, message: string): void {
   const prev = loadRaw();
   const base: TodayMcpMenuState = prev?.ymd === ymd ? prev : { ymd, items: [] };
-  saveTodayMcpMenu({ ...base, error: message, fetchedAt: Date.now() });
+  saveTodayMcpMenu({ ...base, error: message, fetchedAt: Date.now(), mcpFetchPending: false });
+}
+
+/** 由签到 / 拉取餐单流程在发起请求前后更新，以驱动「正在获取」展示 */
+export function setMcpMenuFetchPending(ymd: string, pending: boolean, options?: { clearError?: boolean }): void {
+  if (!pending) {
+    const prev = loadRaw();
+    if (!prev || prev.ymd !== ymd) {
+      return;
+    }
+    saveTodayMcpMenu({ ...prev, mcpFetchPending: false });
+    return;
+  }
+  const prev = loadRaw();
+  if (prev?.ymd === ymd) {
+    saveTodayMcpMenu({
+      ...prev,
+      mcpFetchPending: true,
+      ...(options?.clearError ? { error: undefined } : {}),
+    });
+  } else {
+    saveTodayMcpMenu({ ymd, items: [], mcpFetchPending: true });
+  }
 }
