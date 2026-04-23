@@ -6,3 +6,4 @@ export function ping(): string {
 
 export { runMcpAgent } from "./mcp.js";
 export type { RequestBody, ResponseBody } from "./types.js";
+export { DEFAULT_MCD_MCP_BASE_URL } from "./types.js";

@@ -7,13 +7,25 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from "openai/resources/chat/completions";
-import type { RequestBody, ResponseBody } from "./types.js";
+import { DEFAULT_MCD_MCP_BASE_URL, type RequestBody, type ResponseBody } from "./types.js";
 
-/**
- * 麦当劳中国托管 MCP 接入地址（Streamable HTTP），与开放平台文档一致。
- * @see https://open.mcd.cn/mcp/doc
- */
-const MCD_MCP_STREAMABLE_HTTP_URL = "https://mcp.mcd.cn";
+function resolveOptionalHttpBase(
+  value: string | undefined,
+  field: string,
+): string | undefined {
+  const t = value?.trim();
+  if (!t) return undefined;
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      throw new Error("unsupported protocol");
+    }
+    u.hash = "";
+    return u.toString().replace(/\/+$/, "");
+  } catch {
+    throw new Error(`${field} 须为有效 http(s) URL`);
+  }
+}
 
 /** 文档载明服务端支持 MCP 2025-06-18 及之前版本 */
 const MCD_MCP_PROTOCOL_VERSION = "2025-06-18";
@@ -70,7 +82,9 @@ function formatMcpToolResult(
  * 使用 OpenAI Chat Completions（函数调用）驱动对话，并通过麦当劳 MCP 暴露的工具完成点餐、领券等能力。
  *
  * - `mcptoken`：请求头 `Authorization: Bearer <token>`，见麦当劳 MCP 文档。
- * - `aitoken`：OpenAI `apiKey`。
+ * - `aitoken`：OpenAI 兼容 `apiKey`。
+ * - `mcpBaseUrl`：可选，省略则用 {@link DEFAULT_MCD_MCP_BASE_URL}。
+ * - `aiBaseUrl`：可选，作为 OpenAI 客户端的 `baseURL`（兼容代理或自建端点）。
  */
 export async function runMcpAgent(body: RequestBody): Promise<ResponseBody> {
   const mcptoken = body.mcptoken.trim();
@@ -79,10 +93,19 @@ export async function runMcpAgent(body: RequestBody): Promise<ResponseBody> {
     throw new Error("mcptoken、aitoken 与 prompt 均不能为空");
   }
 
-  const openai = new OpenAI({ apiKey: aitoken });
+  const mcpBaseResolved =
+    resolveOptionalHttpBase(body.mcpBaseUrl, "mcpBaseUrl") ??
+    DEFAULT_MCD_MCP_BASE_URL;
+  const aiBaseResolved = resolveOptionalHttpBase(body.aiBaseUrl, "aiBaseUrl");
+
+  const openai = new OpenAI(
+    aiBaseResolved
+      ? { apiKey: aitoken, baseURL: aiBaseResolved }
+      : { apiKey: aitoken },
+  );
 
   const transport = new StreamableHTTPClientTransport(
-    new URL(MCD_MCP_STREAMABLE_HTTP_URL),
+    new URL(mcpBaseResolved),
     {
       requestInit: {
         headers: {

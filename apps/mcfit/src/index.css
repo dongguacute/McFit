@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui,
+    sans-serif;
+  --color-mcd-gold: #ffbc0d;
+  --color-mcd-red: #da291c;
+  --color-mcd-red-deep: #b81814;
+  --color-mcd-white: #ffffff;
+  --color-mcd-ink: #181818;
+  --color-mcd-ink-muted: #5c5c5c;
+  --color-mcd-hairline: #e8e8e8;
+  --color-mcd-link: #2563eb;
+  --color-mcd-canvas: #f5f5f5;
+  --color-mcd-list-row: #fafafa;
+  --shadow-mcd-phone: 0 25px 50px -12px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.04);
+  --shadow-mcd-sidebar: 1px 0 0 0 rgb(0 0 0 / 0.06);
+}
+
+body {
+  @apply min-h-dvh bg-mcd-canvas font-sans text-mcd-ink antialiased;
+}
+
+/* 首页横幅：金白竖条底纹 */
+.mcd-stripe-hero {
+  background-color: #fff8e0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    #ffbc0d 0,
+    #ffbc0d 6px,
+    #ffffff 6px,
+    #ffffff 12px
+  );
+  background-size: 12px 100%;
+}
