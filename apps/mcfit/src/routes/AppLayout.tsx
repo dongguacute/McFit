@@ -10,6 +10,7 @@ import {
   User,
   UtensilsCrossed,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import siteLogo from "../assets/logo2.png";
 import { getGreeting } from "../lib/greeting";
@@ -34,12 +35,27 @@ const mobileTabClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-mcd-red" : "text-mcd-ink/40",
   ].join(" ");
 
+function shanghaiTimeLabel(d: Date): string {
+  return d.toLocaleTimeString("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
 export function AppLayout() {
   const { pathname } = useLocation();
   const nav = useNavigate();
   const meta = shellTitles[pathname] ?? { t: "McFit", s: "好状态 每一天" };
   const showBack = pathname !== "/";
   const greet = getGreeting();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   return (
     <div className="font-sans flex min-h-dvh flex-col bg-mcd-canvas text-mcd-ink lg:flex-row">
@@ -77,8 +93,15 @@ export function AppLayout() {
             设置
           </NavLink>
         </nav>
-        <div className="shrink-0 border-t border-mcd-hairline p-3 text-[0.65rem] leading-snug text-mcd-ink-muted">
-          本地 MCP 需先构建 <span className="font-mono text-[0.6rem]">@mcfit/api</span>
+        <div className="shrink-0 border-t border-mcd-hairline p-3 text-left">
+          <time
+            className="font-mono text-sm font-extrabold tabular-nums text-mcd-ink/85"
+            dateTime={now.toISOString()}
+            title="中国时区：Asia/Shanghai"
+            aria-live="polite"
+          >
+            {shanghaiTimeLabel(now)}
+          </time>
         </div>
       </aside>
 
