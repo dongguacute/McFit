@@ -1,13 +1,6 @@
-import {
-  ChevronLeft,
-  ClipboardList,
-  Home,
-  LayoutDashboard,
-  Settings,
-  UtensilsCrossed,
-} from "lucide-react";
+import { ClipboardList, Home, LayoutDashboard, Settings, UtensilsCrossed } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import siteLogo from "../assets/logo2.png";
 import { getGreeting } from "../lib/greeting";
 
@@ -45,9 +38,7 @@ function shanghaiTimeLabel(d: Date): string {
 
 export function AppLayout() {
   const { pathname } = useLocation();
-  const nav = useNavigate();
   const meta = shellTitles[pathname] ?? { t: "McFit", s: "好状态 每一天" };
-  const showBack = pathname !== "/";
   const greet = getGreeting();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -135,19 +126,9 @@ export function AppLayout() {
           </NavLink>
         </header>
 
-        {/* 子页标题条（非首页在移动端显示返回；桌面不突出） */}
+        {/* 子页标题条（移动端；桌面不突出） */}
         {pathname !== "/" && (
           <div className="border-b border-mcd-hairline bg-mcd-white px-3 py-2 sm:px-4 lg:hidden">
-            {showBack && (
-              <button
-                type="button"
-                onClick={() => nav(-1)}
-                className="mb-1 inline-flex items-center gap-0.5 text-sm font-extrabold text-mcd-ink/70"
-              >
-                <ChevronLeft className="size-4" />
-                返回
-              </button>
-            )}
             <h1 className="text-lg font-black">{meta.t}</h1>
             <p className="text-xs text-mcd-ink-muted">{meta.s}</p>
           </div>
