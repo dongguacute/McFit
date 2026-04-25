@@ -8,7 +8,7 @@ export type McFitThemeMode = "light" | "dark" | "system";
 
 export type McFitSettings = {
   /**
-   * 高德开放平台 Web 服务 Key（用于周边搜索麦当劳门店）。
+   * 高德开放平台 Web 服务 Key（逆地理：GPS → 文字地址；选店由 MCP query-nearby-stores）。
    * @see https://lbs.amap.com/api/webservice/guide/create-project/get-key
    */
   amapWebKey: string;

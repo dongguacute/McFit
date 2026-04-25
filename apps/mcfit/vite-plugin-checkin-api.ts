@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import type { Connect } from "vite";
 import type { Plugin } from "vite";
-import { runAmapNearestOpenMcDonald } from "./vite-amap-nearest-mcd";
+import { runAmapRegeo } from "./vite-amap-regeo";
 
 const require = createRequire(import.meta.url);
 
@@ -21,9 +21,9 @@ function setCors(res: ServerResponse): void {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-function attachAmapNearestMcdMiddleware(middlewares: Connect.Server): void {
+function attachAmapRegeoMiddleware(middlewares: Connect.Server): void {
   middlewares.use(async (req, res, next) => {
-    if (!req.url?.startsWith("/api/amap-nearest-mcd")) {
+    if (!req.url?.startsWith("/api/amap-regeo")) {
       next();
       return;
     }
@@ -43,7 +43,7 @@ function attachAmapNearestMcdMiddleware(middlewares: Connect.Server): void {
     try {
       const raw = await readJsonBody(req as IncomingMessage);
       const body = JSON.parse(raw) as unknown;
-      const result = await runAmapNearestOpenMcDonald(body);
+      const result = await runAmapRegeo(body);
       setCors(res);
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -134,11 +134,11 @@ export function checkinMenuApiPlugin(): Plugin {
   return {
     name: "mcfit-checkin-menu-api",
     configureServer(server) {
-      attachAmapNearestMcdMiddleware(server.middlewares);
+      attachAmapRegeoMiddleware(server.middlewares);
       attachCheckinMenuMiddleware(server.middlewares);
     },
     configurePreviewServer(server) {
-      attachAmapNearestMcdMiddleware(server.middlewares);
+      attachAmapRegeoMiddleware(server.middlewares);
       attachCheckinMenuMiddleware(server.middlewares);
     },
   };

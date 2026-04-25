@@ -4,7 +4,7 @@ import {
   PLANNED_DAILY_DEFICIT_KCAL,
   remainingIntakeAllowanceKcal,
 } from "./dailyNutrition";
-import { fetchAmapNearestOpenMcDonald } from "./amapMcDonaldProxyClient";
+import { fetchAmapReversedAddress } from "./amapRegeoProxyClient";
 import { fetchCheckinMenuPlan } from "./checkinMenuClient";
 import { loadWorkoutLogs } from "./exerciseDayLog";
 import { ymdInBeijing } from "./exerciseEnergy";
@@ -19,7 +19,7 @@ function todayYmd(): string {
 }
 
 /**
- * 请求定位并调用开发代理 / 或 VITE_CHECKIN_MENU_URL，写入 {@link saveTodayMcpMenu}。
+ * 请求定位、高德逆地理，经 VITE_CHECKIN_MENU_URL 或开发代理调用签到 API，写入 {@link saveTodayMcpMenu}。
  * 供签到后与侧栏「重新拉取」共用。
  */
 export async function runMcpMenuFetch(): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -31,7 +31,7 @@ export async function runMcpMenuFetch(): Promise<{ ok: true } | { ok: false; err
     return { ok: false, error: msg };
   }
   if (!settings.amapWebKey.trim()) {
-    const msg = "请先在设置中填写高德 Web 服务 Key（用于搜索附近营业中的麦当劳门店）。";
+    const msg = "请先在设置中填写高德 Web 服务 Key（用于您当前位置逆地理成文字地址）。";
     setMcpMenuError(today, msg);
     return { ok: false, error: msg };
   }
@@ -72,16 +72,17 @@ export async function runMcpMenuFetch(): Promise<{ ok: true } | { ok: false; err
       return { ok: false, error: msg };
     }
 
-    let amapStore;
+    let locationAddress: string | undefined;
     try {
-      amapStore = await fetchAmapNearestOpenMcDonald({
+      const re = await fetchAmapReversedAddress({
         amapKey: settings.amapWebKey.trim(),
         wgs84Latitude: pos.coords.latitude,
         wgs84Longitude: pos.coords.longitude,
       });
+      locationAddress = re.formattedAddress;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setMcpMenuError(today, `高德选店失败：${msg}`);
+      setMcpMenuError(today, `高德逆地理失败：${msg}`);
       return { ok: false, error: msg };
     }
 
@@ -89,7 +90,7 @@ export async function runMcpMenuFetch(): Promise<{ ok: true } | { ok: false; err
       const { message } = await fetchCheckinMenuPlan(settings, {
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
-        amapSelectedStore: amapStore,
+        ...(locationAddress && { locationAddress }),
         fullDayIntakeBudgetKcal: budget.intakeBudgetKcal,
         consumedKcalSoFar: consumedSoFar,
         remainingIntakeBudgetKcal: remaining,

@@ -344,7 +344,7 @@ export function HomePage() {
               <p className="mt-0.5 text-xs font-medium text-mcd-ink-muted">
                 {streakInfo.checkedToday
                   ? "今日已签到；「饮食记录」页可确认推荐并记入热量"
-                  : "签到将请求定位 → 高德搜附近营业中的麦当劳 → MCP 出餐单（设置里填高德 Key、MCP Token、AI Key 与模型）"}
+                  : "签到将请求定位 → 高德逆地理地址 → MCP query-nearby-stores 选店并出餐单（设置里填高德 Key、MCP Token、AI Key 与模型）"}
               </p>
             </div>
           </div>

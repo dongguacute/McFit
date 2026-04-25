@@ -168,7 +168,7 @@ export function SettingsPage() {
 
       <h2 className="text-xl font-black tracking-tight text-mcd-ink sm:text-2xl">连接</h2>
       <p className="text-sm font-medium leading-relaxed text-mcd-ink-muted">
-        配置高德选店、麦当劳 MCP 与 OpenAI 兼容的地址和密钥；数据保存在本机浏览器，由你在调用后端时一并传入。
+        配置高德逆地理、麦当劳 MCP 与 OpenAI 兼容的地址和密钥；数据保存在本机浏览器，由你在调用后端时一并传入。
       </p>
 
       <div className="overflow-hidden rounded-2xl border border-mcd-hairline bg-mcd-white p-3.5 sm:p-4">
@@ -182,7 +182,7 @@ export function SettingsPage() {
               高德 Web 服务 Key
             </label>
             <p className="mt-1 text-xs font-medium text-mcd-ink-muted">
-              用于周边搜索「仍在营业」的麦当劳门店（签到前自动选最近一家）。在{" "}
+              用于将定位逆地理为文字地址；最近餐厅由麦当劳 MCP 的 query-nearby-stores 查询。在{" "}
               <a
                 href="https://lbs.amap.com/api/webservice/guide/create-project/get-key"
                 target="_blank"

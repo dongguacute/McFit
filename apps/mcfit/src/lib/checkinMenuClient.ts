@@ -1,12 +1,11 @@
-import type { AmapSelectedMcDonaldStore } from "@mcfit/api";
 import { toRunMcpAgentBody } from "./mcfitSettings";
 import type { McFitSettings } from "./mcfitSettings";
 
 export type CheckinMenuPayload = {
   latitude: number;
   longitude: number;
-  /** 高德选中的门店，提交 MCP 时优先匹配该店 */
-  amapSelectedStore: AmapSelectedMcDonaldStore;
+  /** 高德逆地理得到的用户位置文字，选店以 MCP `query-nearby-stores` 为准 */
+  locationAddress?: string;
   fullDayIntakeBudgetKcal: number;
   consumedKcalSoFar: number;
   remainingIntakeBudgetKcal: number;
@@ -34,7 +33,7 @@ export async function fetchCheckinMenuPlan(
     aitoken: base.aitoken,
     latitude: payload.latitude,
     longitude: payload.longitude,
-    amapSelectedStore: payload.amapSelectedStore,
+    ...(payload.locationAddress?.trim() && { locationAddress: payload.locationAddress.trim() }),
     fullDayIntakeBudgetKcal: payload.fullDayIntakeBudgetKcal,
     consumedKcalSoFar: payload.consumedKcalSoFar,
     remainingIntakeBudgetKcal: payload.remainingIntakeBudgetKcal,
